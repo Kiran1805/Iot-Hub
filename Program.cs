@@ -1,34 +1,32 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
-using Microsoft.Azure.Devices.Client;
+using System.Threading.Tasks;
+using Microsoft.Azure;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 
-namespace IotHubReceiver
+namespace BlobFileShare
 {
     class Program
     {
-        static DeviceClient s_deviceClient;
-        static string connectionstring = "HostName=raspiiothub.azure-devices.net;DeviceId=mydeviceid;SharedAccessKey=bMR6lFZrIrauI5LuyAMxUSWHAXr5iMWucmFqFtaEeFc=";
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            s_deviceClient = DeviceClient.CreateFromConnectionString(connectionstring);
-            RecieveC2dAsync();
-            Console.ReadLine();
-        }
-        private static async void RecieveC2dAsync()
-        {
-            Console.WriteLine("Message recieving from Cloud to device from service");
-            while (true)
-            {
-                Microsoft.Azure.Devices.Client.Message recievedmsg = await s_deviceClient.ReceiveAsync();
-                if (recievedmsg == null) continue;
+            string text = "This is a file that is created to upload into the azure cloud sharing";
+            string folder = @"D:\uploadpath\";
+            // Filename  
+            string fileName = "downloadfile.txt";
+            // Fullpath. You can direct hardcode it if you like.  
+            string fullPath = folder + fileName;
 
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("Recieved message: {0}",
-                    Encoding.ASCII.GetString(recievedmsg.GetBytes()));
-                Console.ResetColor();
+            System.IO.File.WriteAllText(fullPath, text);
 
-                await s_deviceClient.CompleteAsync(recievedmsg);
-            }
+            string containerName = "firstblobstoragr";
+            BlobFileShare blobFileShare = new BlobFileShare();
+            blobFileShare.uploadToBlob(fullPath, containerName);
+     
+            blobFileShare.downloadFromBlob(fileName, containerName);
         }
     }
 }
