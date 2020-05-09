@@ -1,29 +1,34 @@
 ﻿using System;
 using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Azure.Devices;
+using Microsoft.Azure.Devices.Client;
 
-namespace IotHubSender
+namespace IotHubReceiver
 {
     class Program
     {
-        static ServiceClient serviceClient;
-        static string connectionString = "HostName=raspiiothub.azure-devices.net;DeviceId=mydeviceid;SharedAccessKey=bMR6lFZrIrauI5LuyAMxUSWHAXr5iMWucmFqFtaEeFc=";
+        static DeviceClient s_deviceClient;
+        static string connectionstring = "HostName=raspiiothub.azure-devices.net;DeviceId=mydeviceid;SharedAccessKey=bMR6lFZrIrauI5LuyAMxUSWHAXr5iMWucmFqFtaEeFc=";
         static void Main(string[] args)
         {
-            Console.WriteLine("Send message to IOT device");
-            serviceClient = ServiceClient.CreateFromConnectionString(connectionString);
-
-            Console.WriteLine("Press any key to send message");
-            Console.ReadLine();
-            SendC2DMsgAsync().Wait();
+            s_deviceClient = DeviceClient.CreateFromConnectionString(connectionstring);
+            RecieveC2dAsync();
             Console.ReadLine();
         }
-        private async static Task SendC2DMsgAsync()
+        private static async void RecieveC2dAsync()
         {
-            var commandMessage = new
-                Message(Encoding.ASCII.GetBytes("Temperature data sent"));
-            await serviceClient.SendAsync("mydeviceid", commandMessage);
+            Console.WriteLine("Message recieving from Cloud to device from service");
+            while (true)
+            {
+                Microsoft.Azure.Devices.Client.Message recievedmsg = await s_deviceClient.ReceiveAsync();
+                if (recievedmsg == null) continue;
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("Recieved message: {0}",
+                    Encoding.ASCII.GetString(recievedmsg.GetBytes()));
+                Console.ResetColor();
+
+                await s_deviceClient.CompleteAsync(recievedmsg);
+            }
         }
     }
 }
